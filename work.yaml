@@ -1,0 +1,65 @@
+name: 构建LLVM交叉-由Yeruiqi构建
+on:
+workflow_dispatch:
+推:
+分支机构: [主要的]
+
+jobs:
+建立:
+run-on: ubuntu-最新
+timeout-minutes: 350
+步骤:
+      - 姓名: 安装先决条件
+跑: |
+sudo apt更新
+sudo apt install-y git cmake ninja-build构建必需的python3rsync
+
+      - 姓名: 缓存llvm源代码+内部版本
+uses: 操作/缓存@v4
+和……一起:
+路径: |
+现在我们可以看到
+llvm-install
+关键: yeruiqi-v1lvm-cross-arm-build-by-yeruiqi-v1
+
+      - 姓名: 克隆LLVM(如果缺少)
+跑: |
+如果[！-d llvm-project]；则
+git克隆-深度1 https://github.com/llvm/llvm-project.git
+          fi
+
+      - 姓名: 配置LLVM
+跑: |
+CDllvm-project/llvm
+CMake-B../build-G Ninja\
+-DCMAKE_BUILD_TYPE=Release\
+-DLLVM_TARGETS_TO_BUILD="ARM；AArch64；X86"\
+-DLLVM_ENABLE_PROJECTS="哐啷；lld"\
+-DCMAKE_INSTALL_PREFIX="$GITHUB_WORKSPACE/llvm-install"\
+-DLLVM_BUILD_LLVM_dylib=OFF\
+-DLLVM_INCLUDE_TESTS=OFF\
+-DLLVM_INCLUDE_EXAMPLES=OFF\
+-DCMAKE_CXX_FLAGS="-Wno-dangling-reference"\
+-Wno-dev
+
+      - 姓名: 生成和安装
+跑: |
+CDllvm-项目/内部版本
+忍者J"$(nproc)"安装
+
+      - 姓名: 打印横幅-由叶瑞旗构建
+跑: |
+回声"====================================="
+回声"耶瑞奇建造"
+回声"====================================="
+
+      - 姓名: 打包工具链（由yeruiqi构成）
+跑: |
+CD$GITHUB_WORKSPACE
+tar-czf"llvm-cross-arm-build-by-yeruiqi.tar.gz"llvm-install
+
+      - 姓名: 上传工件
+uses: 操作/上载工件@v4
+和……一起:
+姓名: 耶瑞奇横臂造llvm
+路径: yeruiqi.tar.gz的llvm-横臂建造
