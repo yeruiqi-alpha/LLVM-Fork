@@ -1,0 +1,65 @@
+name: Build LLVM Cross — build-by-yeruiqi
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - name: Install prerequisites
+        run: |
+          sudo apt update
+          sudo apt install -y git cmake ninja-build build-essential python3 rsync
+
+      - name: Cache llvm source + build
+        uses: actions/cache@v4
+        with:
+          path: |
+            llvm-project
+            llvm-install
+          key: llvm-cross-arm-build-by-yeruiqi-v1
+
+      - name: Clone LLVM if missing
+        run: |
+          if [ ! -d llvm-project ]; then
+            git clone --depth 1 https://github.com/llvm/llvm-project.git
+          fi
+
+      - name: Configure LLVM
+        run: |
+          cd llvm-project/llvm
+          cmake -B ../build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DLLVM_TARGETS_TO_BUILD="ARM;AArch64;X86" \
+            -DLLVM_ENABLE_PROJECTS="clang;lld" \
+            -DCMAKE_INSTALL_PREFIX="$GITHUB_WORKSPACE/llvm-install" \
+            -DLLVM_BUILD_LLVM_DYLIB=OFF \
+            -DLLVM_INCLUDE_TESTS=OFF \
+            -DLLVM_INCLUDE_EXAMPLES=OFF \
+            -DCMAKE_CXX_FLAGS="-Wno-dangling-reference" \
+            -Wno-dev
+
+      - name: Build & Install
+        run: |
+          cd llvm-project/build
+          ninja -j "$(nproc)" install
+
+      - name: Print banner — build-by-yeruiqi
+        run: |
+          echo "====================================="
+          echo "          build-by-yeruiqi           "
+          echo "====================================="
+
+      - name: Pack toolchain (build-by-yeruiqi)
+        run: |
+          cd $GITHUB_WORKSPACE
+          tar -czf "llvm-cross-arm-build-by-yeruiqi.tar.gz" llvm-install
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: llvm-cross-arm-build-by-yeruiqi
+          path: llvm-cross-arm-build-by-yeruiqi.tar.gz
